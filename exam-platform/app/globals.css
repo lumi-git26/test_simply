@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-charter: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+}
+
+body {
+  @apply bg-paper text-ink;
+}
+
+.btn-primary {
+  @apply bg-ink text-paper rounded-card px-6 py-4 font-semibold
+         hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed;
+}
+
+.btn-outline {
+  @apply border border-ink text-ink rounded-card px-6 py-4 font-semibold
+         hover:bg-ink hover:text-paper transition;
+}
+
+.input-field {
+  @apply w-full rounded-card border border-border bg-paper px-5 py-4
+         text-ink placeholder:text-ink-soft/60 outline-none
+         focus:border-ink transition;
+}
