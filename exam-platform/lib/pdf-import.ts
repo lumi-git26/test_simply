@@ -1,4 +1,4 @@
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 const API_KEY = process.env.GEMINI_API_KEY;
 
 export type ExtractedPassage = { passage_id: string; title: string; body: string };
