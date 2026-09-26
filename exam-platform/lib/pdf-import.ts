@@ -59,26 +59,37 @@ export async function extractQuestionsFromPdf(
             ],
           },
         ],
-        generationConfig: { responseMimeType: "application/json", maxOutputTokens: 8192 },
+        generationConfig: { responseMimeType: "application/json", maxOutputTokens: 32768 },
       }),
     }
   );
 
   if (!res.ok) {
     const body = await res.text();
-    return { passages: [], questions: [], error: `Gemini error ${res.status}: ${body.slice(0, 300)}` };
+    return { passages: [], questions: [], error: `Gemini error ${res.status}: ${body.slice(0, 500)}` };
   }
 
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const candidate = data?.candidates?.[0];
+  const text = candidate?.content?.parts?.[0]?.text;
+
   if (!text) {
-    return { passages: [], questions: [], error: "Gemini không trả về nội dung (có thể PDF quá dài hoặc bị chặn)." };
+    // Surface the REAL reason instead of a generic message — common causes:
+    // "MAX_TOKENS" (response got cut off), "SAFETY" (content blocked),
+    // or promptFeedback.blockReason (the PDF itself got blocked).
+    const finishReason = candidate?.finishReason;
+    const blockReason = data?.promptFeedback?.blockReason;
+    return {
+      passages: [],
+      questions: [],
+      error: `Gemini không trả về nội dung. finishReason=${finishReason ?? "?"} blockReason=${blockReason ?? "?"}. Thử PDF ngắn hơn hoặc chia nhỏ đề thi.`,
+    };
   }
 
   try {
     const parsed = JSON.parse(text);
     return { passages: parsed.passages ?? [], questions: parsed.questions ?? [] };
   } catch {
-    return { passages: [], questions: [], error: "Không parse được JSON từ Gemini." };
+    return { passages: [], questions: [], error: `Không parse được JSON từ Gemini. Raw (500 ký tự đầu): ${text.slice(0, 500)}` };
   }
 }
