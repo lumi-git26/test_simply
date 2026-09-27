@@ -17,6 +17,7 @@ const VALID_TYPES = new Set([
   "fill_blank",
   "writing_rewrite",
   "writing_rearrange",
+  "order",
 ]);
 
 // Parses a workbook that follows exam_import_template.xlsx (sheets:

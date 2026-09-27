@@ -135,8 +135,8 @@ export default function TakeExamPage() {
                   value={answers[question.id] ?? ""}
                   onChange={(val) => setAnswers((a) => ({ ...a, [question.id]: val }))}
                   showInstruction={
-                    !!question.instruction &&
-                    data.questions.findIndex((q) => q.instruction === question.instruction) === i
+                  !!question.instruction &&
+                  question.instruction !== data.questions[i - 1]?.instruction
                   }
                 />
               </div>

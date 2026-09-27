@@ -2,7 +2,8 @@ export type QuestionType =
   | "multiple_choice"
   | "fill_blank"
   | "writing_rewrite"
-  | "writing_rearrange";
+  | "writing_rearrange"
+  | "order";
 
 export type Exam = {
   id: string;
@@ -40,6 +41,7 @@ export type Question = {
   order_index: number;
   question_type: QuestionType;
   question_text: string;
+  context: string | null;
   options: Record<"A" | "B" | "C" | "D", string> | null;
   correct_answer: string;
   points: number;
@@ -62,8 +64,6 @@ export type Submission = {
   reviewed_by_teacher: boolean;
 };
 
-// Full exam payload sent to the student "take exam" screen.
-// correct_answer / explanation are stripped server-side before this is sent.
 export type PublicQuestion = Omit<Question, "correct_answer" | "explanation">;
 
 export type ExamForTaking = {

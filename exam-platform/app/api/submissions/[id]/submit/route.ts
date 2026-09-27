@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     let aiFeedback: string | null = null;
     let pointsAwarded = 0;
 
-    if (q.question_type === "multiple_choice" || q.question_type === "fill_blank") {
+    if (q.question_type === "multiple_choice" || q.question_type === "fill_blank" || q.question_type === "order") {
       const acceptable = q.correct_answer.split(";").map((s: string) => s.trim().toLowerCase());
       isCorrect = acceptable.includes(studentAnswer.trim().toLowerCase());
       pointsAwarded = isCorrect ? Number(q.points) : 0;

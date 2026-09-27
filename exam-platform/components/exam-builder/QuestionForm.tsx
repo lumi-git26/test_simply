@@ -9,6 +9,7 @@ const TYPE_LABELS: Record<QuestionType, string> = {
   fill_blank: "Fill in the blank",
   writing_rewrite: "Writing — Rewrite",
   writing_rearrange: "Writing — Rearrange",
+  order: "Order (sắp xếp câu)",
 };
 
 export function QuestionForm({ onAdd }: { onAdd: (q: any) => Promise<void> }) {
