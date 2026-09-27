@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { Timer } from "@/components/exam-taking/Timer";
 import { QuestionNavigator } from "@/components/exam-taking/QuestionNavigator";
@@ -21,9 +21,9 @@ export default function TakeExamPage() {
   const router = useRouter();
 
   const [data, setData] = useState<StartResponse | null>(null);
-  const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const refs = useRef<Record<number, HTMLDivElement | null>>({});
 
   useEffect(() => {
     fetch(`/api/exams/${params.slug}/start`, {
@@ -62,66 +62,68 @@ export default function TakeExamPage() {
     return <main className="flex min-h-screen items-center justify-center">Loading…</main>;
   }
 
-  const question = data.questions[current];
-  const passage = question?.passage_id
-    ? data.passages.find((p) => p.id === question.passage_id)
-    : null;
   const answeredSet = new Set(
     data.questions.map((q, i) => (answers[q.id]?.trim() ? i : -1)).filter((i) => i >= 0)
   );
+
+  function scrollTo(i: number) {
+    refs.current[i]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-16">
       <div className="mb-10 flex items-center justify-between">
         <h1 className="text-2xl font-bold">{data.exam.title}</h1>
-        {data.deadline && (
-          <Timer deadline={data.deadline} onExpire={() => submit(true)} />
-        )}
+        {data.deadline && <Timer deadline={data.deadline} onExpire={() => submit(true)} />}
       </div>
 
       <div className="grid grid-cols-1 gap-12 md:grid-cols-[1fr_360px]">
-        <div>
-          {passage && (
-            <div className="mb-8 rounded-card border border-border bg-paper-dark p-6">
-              {passage.title && <h2 className="mb-2 font-bold">{passage.title}</h2>}
-              <p className="whitespace-pre-line text-ink-soft">{passage.body}</p>
-            </div>
-          )}
+        <div className="space-y-12">
+          {data.questions.map((question, i) => {
+            const passage = question.passage_id
+              ? data.passages.find((p) => p.id === question.passage_id)
+              : null;
+            // only show the passage box once, right before its first question
+            const isFirstOfPassage =
+              passage &&
+              data.questions.findIndex((q) => q.passage_id === question.passage_id) === i;
 
-          {question && (
-            <QuestionRenderer
-              index={current}
-              question={question}
-              value={answers[question.id] ?? ""}
-              onChange={(val) => setAnswers((a) => ({ ...a, [question.id]: val }))}
-            />
-          )}
+            return (
+              <div
+                key={question.id}
+                ref={(el) => {
+                  refs.current[i] = el;
+                }}
+                className="scroll-mt-10"
+              >
+                {isFirstOfPassage && passage && (
+                  <div className="mb-6 rounded-card border border-border bg-paper-dark p-6">
+                    {passage.title && <h2 className="mb-2 font-bold">{passage.title}</h2>}
+                    <p className="whitespace-pre-line text-ink-soft">{passage.body}</p>
+                  </div>
+                )}
+                <QuestionRenderer
+                  index={i}
+                  question={question}
+                  value={answers[question.id] ?? ""}
+                  onChange={(val) => setAnswers((a) => ({ ...a, [question.id]: val }))}
+                />
+              </div>
+            );
+          })}
 
-          <div className="mt-10 flex justify-between">
-            <button
-              className="btn-outline"
-              disabled={current === 0}
-              onClick={() => setCurrent((c) => Math.max(0, c - 1))}
-            >
-              Previous
+          <div className="flex justify-end">
+            <button className="btn-primary" disabled={submitting} onClick={() => submit(false)}>
+              {submitting ? "Submitting…" : "Submit"}
             </button>
-            {current < data.questions.length - 1 ? (
-              <button className="btn-primary" onClick={() => setCurrent((c) => c + 1)}>
-                Next
-              </button>
-            ) : (
-              <button className="btn-primary" disabled={submitting} onClick={() => submit(false)}>
-                {submitting ? "Submitting…" : "Submit"}
-              </button>
-            )}
           </div>
         </div>
 
         <QuestionNavigator
           total={data.questions.length}
-          current={current}
+          mode="taking"
           answered={answeredSet}
-          onJump={setCurrent}
+          onJump={scrollTo}
         />
       </div>
     </main>

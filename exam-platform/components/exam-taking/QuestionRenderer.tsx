@@ -25,20 +25,24 @@ export function QuestionRenderer({
       </p>
 
       {question.question_type === "multiple_choice" && question.options && (
-        <div className="mt-4 flex flex-wrap gap-x-10 gap-y-3">
-          {(["A", "B", "C", "D"] as const).map((key) => (
-            <label key={key} className="flex cursor-pointer items-center gap-2">
-              <input
-                type="radio"
-                name={`q-${question.id}`}
-                checked={value === key}
-                onChange={() => onChange(key)}
-              />
-              <span>
+        <div className="mt-4 flex flex-wrap gap-3">
+          {(["A", "B", "C", "D"] as const).map((key) => {
+            const selected = value === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onChange(key)}
+                className={`rounded-lg border px-4 py-2 text-left transition
+                  ${selected
+                    ? "border-ink bg-ink text-paper"
+                    : "border-transparent hover:border-ink"}
+                `}
+              >
                 {key}. {question.options![key]}
-              </span>
-            </label>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -55,8 +59,6 @@ export function QuestionRenderer({
   );
 }
 
-// fill_blank questions store the blank as "___" inside question_text; render
-// it as an inline text input, matching screenshot 3's boxed blank.
 function InlineBlank({
   question,
   value,
