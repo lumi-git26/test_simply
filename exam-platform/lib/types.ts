@@ -44,6 +44,7 @@ export type Question = {
   correct_answer: string;
   points: number;
   explanation: string | null;
+  instruction: string | null;
 };
 
 export type Submission = {

@@ -1,20 +1,36 @@
 "use client";
 
 import { PublicQuestion } from "@/lib/types";
+import { mcLayout } from "@/lib/mc-layout";
 
 export function QuestionRenderer({
   index,
   question,
   value,
   onChange,
+  showInstruction,
 }: {
   index: number;
   question: PublicQuestion;
   value: string;
   onChange: (val: string) => void;
+  showInstruction?: boolean; // true nếu đây là câu đầu tiên mang instruction này
 }) {
+  const layout = question.options ? mcLayout(question.options) : "grid-4";
+
+  const containerClass =
+    layout === "grid-4"
+      ? "grid grid-cols-2 sm:grid-cols-4 gap-3"
+      : layout === "grid-2"
+      ? "grid grid-cols-1 sm:grid-cols-2 gap-3"
+      : "flex flex-col gap-2";
+
   return (
     <div>
+      {showInstruction && question.instruction && (
+        <p className="mb-3 italic font-semibold text-ink">{question.instruction}</p>
+      )}
+
       <p className="text-lg">
         Question {index + 1}.{" "}
         {question.question_type === "fill_blank" ? (
@@ -25,7 +41,7 @@ export function QuestionRenderer({
       </p>
 
       {question.question_type === "multiple_choice" && question.options && (
-        <div className="mt-4 flex flex-wrap gap-3">
+        <div className={`mt-4 ${containerClass}`}>
           {(["A", "B", "C", "D"] as const).map((key) => {
             const selected = value === key;
             return (

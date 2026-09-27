@@ -102,12 +102,16 @@ export default function TakeExamPage() {
                     <p className="whitespace-pre-line text-ink-soft">{passage.body}</p>
                   </div>
                 )}
-                <QuestionRenderer
-                  index={i}
-                  question={question}
-                  value={answers[question.id] ?? ""}
-                  onChange={(val) => setAnswers((a) => ({ ...a, [question.id]: val }))}
-                />
+<QuestionRenderer
+  index={i}
+  question={question}
+  value={answers[question.id] ?? ""}
+  onChange={(val) => setAnswers((a) => ({ ...a, [question.id]: val }))}
+  showInstruction={
+    !!question.instruction &&
+    data.questions.findIndex((q) => q.instruction === question.instruction) === i
+  }
+/>
               </div>
             );
           })}

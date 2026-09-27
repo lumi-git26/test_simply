@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
     supabase.from("passages").select("*").eq("exam_id", exam.id).order("order_index"),
     supabase
       .from("questions")
-      .select("id, exam_id, passage_id, part, order_index, question_type, question_text, options, points")
+      .select("id, exam_id, passage_id, part, order_index, question_type, question_text, options, points, instruction")
       .eq("exam_id", exam.id)
       .order("order_index"),
   ]);
