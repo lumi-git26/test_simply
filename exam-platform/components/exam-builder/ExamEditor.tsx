@@ -1,38 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Exam, ExamSettings, Question } from "@/lib/types";
+import { Exam, ExamSettings, Question, Passage } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
-import { QuestionForm } from "@/components/exam-builder/QuestionForm";
+import { BlockEditor } from "@/components/exam-builder/BlockEditor";
 import { ExcelImport } from "@/components/exam-builder/ExcelImport";
-import { SharePopup } from "@/components/exam-builder/SharePopup";
 import { PdfImport } from "@/components/exam-builder/PdfImport";
+import { SharePopup } from "@/components/exam-builder/SharePopup";
 
 export function ExamEditor({
   exam,
   settings,
   initialQuestions,
+  initialPassages,
 }: {
   exam: Exam;
   settings: ExamSettings;
   initialQuestions: Question[];
+  initialPassages: Passage[];
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(exam.title);
   const [timeLimit, setTimeLimit] = useState(exam.time_limit_minutes ?? "");
   const [status, setStatus] = useState(exam.status);
-  const [questions, setQuestions] = useState(initialQuestions);
-
-  useEffect(() => {
-    setQuestions(initialQuestions);
-  }, [initialQuestions]);
-
   const [showShare, setShowShare] = useState(false);
-  const [savingHeader, setSavingHeader] = useState(false);
 
   async function saveHeader() {
-    setSavingHeader(true);
     await fetch(`/api/exams/${exam.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -41,26 +35,6 @@ export function ExamEditor({
         time_limit_minutes: timeLimit === "" ? null : Number(timeLimit),
       }),
     });
-    setSavingHeader(false);
-  }
-
-  async function addQuestion(q: any) {
-    const res = await fetch(`/api/exams/${exam.id}/questions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(q),
-    });
-    const created = await res.json();
-    setQuestions((prev) => [...prev, created]);
-  }
-
-  async function deleteQuestion(id: string) {
-    await fetch(`/api/exams/${exam.id}/questions/${id}`, { method: "DELETE" });
-    setQuestions((prev) => prev.filter((q) => q.id !== id));
-  }
-
-  function refreshQuestions() {
-    router.refresh();
   }
 
   return (
@@ -89,42 +63,13 @@ export function ExamEditor({
         </div>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-[1fr_360px]">
-        <div>
-          <h2 className="mb-4 text-lg font-bold">
-            Câu hỏi ({questions.length})
-          </h2>
-          <div className="mb-6 space-y-3">
-            {questions.map((q, i) => (
-              <div
-                key={q.id}
-                className="flex items-start justify-between rounded-card border border-border p-4"
-              >
-                <div>
-                  <p className="text-sm text-ink-soft">
-                    #{i + 1} · Part {q.part} · {q.question_type}
-                  </p>
-                  <p className="mt-1">{q.question_text}</p>
-                </div>
-                <button
-                  className="text-sm text-red-600 hover:underline"
-                  onClick={() => deleteQuestion(q.id)}
-                >
-                  Xoá
-                </button>
-              </div>
-            ))}
-            {!questions.length && (
-              <p className="text-ink-soft">Chưa có câu hỏi nào — thêm thủ công hoặc import Excel.</p>
-            )}
-          </div>
-        </div>
+      <div className="ml-8">
+        <BlockEditor examId={exam.id} initialQuestions={initialQuestions} initialPassages={initialPassages} />
+      </div>
 
-        <div className="space-y-6">
-          <QuestionForm onAdd={addQuestion} />
-          <ExcelImport examId={exam.id} onImported={refreshQuestions} />
-          <PdfImport examId={exam.id} onImported={refreshQuestions} />
-        </div>
+      <div className="mt-12 grid gap-6 md:grid-cols-2">
+        <ExcelImport examId={exam.id} onImported={() => router.refresh()} />
+        <PdfImport examId={exam.id} onImported={() => router.refresh()} />
       </div>
 
       {showShare && (

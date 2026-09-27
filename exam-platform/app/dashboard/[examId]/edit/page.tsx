@@ -30,7 +30,18 @@ export default async function EditExamPage({ params }: { params: { examId: strin
     .eq("exam_id", exam.id)
     .order("order_index");
 
+  const { data: passages } = await supabase
+    .from("passages")
+    .select("*")
+    .eq("exam_id", exam.id)
+    .order("order_index");
+
   return (
-    <ExamEditor exam={exam} settings={settings!} initialQuestions={questions ?? []} />
+    <ExamEditor
+      exam={exam}
+      settings={settings!}
+      initialQuestions={questions ?? []}
+      initialPassages={passages ?? []}
+    />
   );
 }

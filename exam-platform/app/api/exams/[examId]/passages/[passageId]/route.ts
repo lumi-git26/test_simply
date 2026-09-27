@@ -3,24 +3,17 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { examId: string; questionId: string } }
+  { params }: { params: { examId: string; passageId: string } }
 ) {
   const supabase = createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const allowed = [
-    "passage_id", "part", "order_index", "question_type", "question_text",
-    "context", "options", "correct_answer", "points", "explanation", "instruction",
-  ];
-  const update: Record<string, unknown> = {};
-  for (const key of allowed) if (key in body) update[key] = body[key];
-
   const { data, error } = await supabase
-    .from("questions")
-    .update(update)
-    .eq("id", params.questionId)
+    .from("passages")
+    .update({ title: body.title ?? null, body: body.body ?? "" })
+    .eq("id", params.passageId)
     .eq("exam_id", params.examId)
     .select()
     .single();
@@ -31,16 +24,16 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { examId: string; questionId: string } }
+  { params }: { params: { examId: string; passageId: string } }
 ) {
   const supabase = createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { error } = await supabase
-    .from("questions")
+    .from("passages")
     .delete()
-    .eq("id", params.questionId)
+    .eq("id", params.passageId)
     .eq("exam_id", params.examId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
