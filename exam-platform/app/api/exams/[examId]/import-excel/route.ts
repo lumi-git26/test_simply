@@ -51,18 +51,20 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
   const { error: qErr, count } = await supabase
     .from("questions")
     .insert(
-      questions.map((q, i) => ({
+    questions.map((q, i) => ({
         exam_id: exam.id,
         passage_id: q.passage_id ? idMap.get(q.passage_id) ?? null : null,
         part: q.part,
         order_index: i,
         question_type: q.question_type,
         question_text: q.question_text,
+        context: q.context,
         options: q.options,
         correct_answer: q.correct_answer,
         points: q.points,
         explanation: q.explanation,
-      })),
+        instruction: q.instruction,
+})),
       { count: "exact" }
     );
 
