@@ -29,9 +29,9 @@ export function QuestionNavigator({
   }
 
   return (
-    <div className="sticky top-10 rounded-card bg-ink p-6 text-paper">
+    <div className="rounded-card bg-ink p-6 text-paper">
       <p className="mb-4 text-lg font-semibold">Questions</p>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 overflow-y-auto pr-1" style={{ maxHeight: "calc(100vh - 12rem)" }}>
         {Array.from({ length: total }, (_, i) => i).map((i) => (
           <button
             key={i}
@@ -42,6 +42,7 @@ export function QuestionNavigator({
           </button>
         ))}
       </div>
+
       {mode === "review" && (
         <div className="mt-4 flex gap-4 text-xs text-paper/70">
           <span className="flex items-center gap-1">
