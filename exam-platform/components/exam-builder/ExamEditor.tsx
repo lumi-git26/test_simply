@@ -1,12 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Exam, ExamSettings, Question, Passage } from "@/lib/types";
-import { Button } from "@/components/ui/Button";
 import { BlockEditor } from "@/components/exam-builder/BlockEditor";
-import { ExcelImport } from "@/components/exam-builder/ExcelImport";
-import { PdfImport } from "@/components/exam-builder/PdfImport";
 import { SharePopup } from "@/components/exam-builder/SharePopup";
 
 export function ExamEditor({
@@ -20,11 +17,14 @@ export function ExamEditor({
   initialQuestions: Question[];
   initialPassages: Passage[];
 }) {
-  const router = useRouter();
   const [title, setTitle] = useState(exam.title);
   const [timeLimit, setTimeLimit] = useState(exam.time_limit_minutes ?? "");
   const [status, setStatus] = useState(exam.status);
   const [showShare, setShowShare] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [saveTrigger, setSaveTrigger] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
 
   async function saveHeader() {
     await fetch(`/api/exams/${exam.id}`, {
@@ -38,61 +38,56 @@ export function ExamEditor({
   }
 
   return (
-    <main className="min-h-screen bg-slate-50/50 px-4 py-8 pb-32 md:px-8">
-      <div className="mx-auto max-w-4xl space-y-6">
-        {/* Header: Tên bài thi & Thời gian */}
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all hover:shadow-md">
+    <div className="min-h-screen">
+      {/* ---------- Top bar ---------- */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-paper/90 px-6 py-3 backdrop-blur">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="text-ink-soft hover:text-ink">←</Link>
           <input
-            className="flex-1 bg-transparent text-xl font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none"
-            placeholder="Nhập tên bài kiểm tra..."
+            className="w-64 bg-transparent font-semibold outline-none"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={saveHeader}
           />
-          <div className="flex items-center gap-2 rounded-xl bg-slate-100/80 px-3 py-1.5 text-xs font-medium text-slate-600">
-            <span>⏱️ Thời gian:</span>
-            <input
-              type="number"
-              className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1 text-center font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
-              value={timeLimit}
-              onChange={(e) => setTimeLimit(e.target.value === "" ? "" : Number(e.target.value))}
-              onBlur={saveHeader}
-            />
-            <span>phút</span>
-          </div>
+          <input
+            type="number"
+            className="w-16 rounded border border-border bg-paper px-2 py-1 text-sm"
+            value={timeLimit}
+            onChange={(e) => setTimeLimit(e.target.value === "" ? "" : Number(e.target.value))}
+            onBlur={saveHeader}
+            placeholder="min"
+          />
+          {savedAt && <span className="text-xs text-ink-soft">Saved {savedAt.toLocaleTimeString()}</span>}
         </div>
 
-        {/* 1. Import Excel / PDF - Đặt lên TRÊN CÙNG (Compact Card) */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
-            <div className="flex items-center gap-2">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-bold text-indigo-700">
-                1
-              </span>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Nhập đề từ file (Excel / PDF)
-              </h3>
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ExcelImport examId={exam.id} onImported={() => router.refresh()} />
-            <PdfImport examId={exam.id} onImported={() => router.refresh()} />
-          </div>
+        <div className="flex items-center gap-2">
+          <button className="btn-outline px-4 py-2 text-sm" onClick={() => setShowPreview(true)}>
+            Preview
+          </button>
+          <button
+            className="btn-outline px-4 py-2 text-sm"
+            disabled={saving}
+            onClick={() => setSaveTrigger((n) => n + 1)}
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+          <button className="btn-primary px-4 py-2 text-sm" onClick={() => setShowShare(true)}>
+            {status === "published" ? "Share" : "Publish"}
+          </button>
         </div>
+      </header>
 
-        {/* 2. Danh sách block & 3. Floating Actions */}
-        <BlockEditor
-          key={`${initialQuestions.length}-${initialPassages.length}`}
-          examId={exam.id}
-          initialQuestions={initialQuestions}
-          initialPassages={initialPassages}
-          publishButton={
-            <Button onClick={() => setShowShare(true)}>
-              {status === "published" ? "Share / Settings" : "Publish"}
-            </Button>
-          }
-        />
-      </div>
+      <BlockEditor
+        key={`${initialQuestions.length}-${initialPassages.length}`}
+        examId={exam.id}
+        initialQuestions={initialQuestions}
+        initialPassages={initialPassages}
+        externalShowPreview={showPreview}
+        onClosePreview={() => setShowPreview(false)}
+        externalSaveTrigger={saveTrigger}
+        onSavingChange={setSaving}
+        onSaved={() => setSavedAt(new Date())}
+      />
 
       {showShare && (
         <SharePopup
@@ -104,6 +99,6 @@ export function ExamEditor({
           onPublished={() => setStatus("published")}
         />
       )}
-    </main>
+    </div>
   );
 }

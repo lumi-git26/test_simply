@@ -12,28 +12,20 @@ export function ReadingBlockCard({
   onDelete: () => void;
 }) {
   return (
-    <div className="group rounded-card bg-paper-dark p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-ink-soft">
-          <span className="cursor-grab select-none">⠿</span>
-          <span>▤ Reading passage</span>
-        </div>
-        <button
-          onClick={onDelete}
-          className="opacity-0 group-hover:opacity-100 text-sm text-red-600 transition"
-        >
-          Xoá
-        </button>
+    <div className="group rounded-card border border-border bg-paper-dark p-4">
+      <div className="mb-2 flex items-center justify-between text-sm text-ink-soft">
+        <span>▤ Passage</span>
+        <button onClick={onDelete} className="opacity-0 group-hover:opacity-100 text-red-600 transition">✕</button>
       </div>
       <input
-        className="input-field mb-3"
-        placeholder="Tiêu đề đoạn văn (không bắt buộc)"
+        className="input-field mb-2"
+        placeholder="Title (optional)"
         value={data.title}
         onChange={(e) => onChange({ ...data, title: e.target.value })}
       />
       <textarea
-        className="input-field min-h-[140px]"
-        placeholder="Nội dung đoạn văn — các câu hỏi phía dưới có thể chọn gắn vào đoạn này"
+        className="input-field min-h-[100px]"
+        placeholder="Passage text"
         value={data.body}
         onChange={(e) => onChange({ ...data, body: e.target.value })}
       />

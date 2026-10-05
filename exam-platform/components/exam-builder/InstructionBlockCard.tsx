@@ -12,22 +12,12 @@ export function InstructionBlockCard({
   onDelete: () => void;
 }) {
   return (
-    <div className="group rounded-card bg-paper-dark px-4 py-3">
-      <div className="mb-1 flex items-center gap-3">
-        <span className="cursor-grab select-none text-ink-soft/50">⠿</span>
-        <span className="text-ink-soft">#</span>
-        <button
-          onClick={onDelete}
-          className="ml-auto opacity-0 group-hover:opacity-100 text-sm text-red-600 transition"
-        >
-          Xoá
-        </button>
+    <div className="group flex items-start gap-2 rounded-card bg-paper-dark px-3 py-2">
+      <span className="mt-1.5 text-ink-soft">#</span>
+      <div className="flex-1">
+        <RichTextField placeholder="Instruction for the following questions" value={text} onChange={onChange} />
       </div>
-      <RichTextField
-        placeholder="From question 1 to 4, choose the best answer to fill in the blank"
-        value={text}
-        onChange={onChange}
-      />
+      <button onClick={onDelete} className="mt-1.5 opacity-0 group-hover:opacity-100 text-sm text-red-600 transition">✕</button>
     </div>
   );
 }

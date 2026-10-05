@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Block, newQuestionBlock, newReadingBlock, newInstructionBlock, shuffleOrderItems,
 } from "@/lib/blocks";
@@ -9,14 +9,13 @@ import { AddBlockMenu } from "@/components/exam-builder/AddBlockMenu";
 import { QuestionBlockCard } from "@/components/exam-builder/QuestionBlockCard";
 import { ReadingBlockCard } from "@/components/exam-builder/ReadingBlockCard";
 import { InstructionBlockCard } from "@/components/exam-builder/InstructionBlockCard";
-import { Button } from "@/components/ui/Button";
 import { PreviewModal } from "@/components/exam-builder/PreviewModal";
+import { ExcelImport } from "@/components/exam-builder/ExcelImport";
+import { PdfImport } from "@/components/exam-builder/PdfImport";
 
 let uid = 0;
 const nextId = () => `blk_${Date.now()}_${uid++}`;
 
-// Convert existing DB questions/passages into an initial block list, so
-// re-opening the editor shows what's already saved.
 function fromExisting(questions: Question[], passages: Passage[]): Block[] {
   const passageBlockIdByDbId = new Map<string, string>();
   const blocks: Block[] = [];
@@ -70,31 +69,43 @@ function fromExisting(questions: Question[], passages: Passage[]): Block[] {
 }
 
 function reconstructOrderItems(shuffled: string[], correctAnswer: string): string[] {
-  // correct_answer[k] = position in `shuffled` of the item that belongs at
-  // original position k — invert that to rebuild the original correct order.
   const positions = correctAnswer.split(",").map(Number);
   const result: string[] = new Array(shuffled.length);
   positions.forEach((shuffledPos, originalPos) => { result[originalPos] = shuffled[shuffledPos]; });
   return result;
 }
 
+const TYPE_SHORT: Record<string, string> = {
+  multiple_choice: "MC",
+  fill_blank: "Blank",
+  order: "Order",
+  writing_rewrite: "Writing",
+  writing_rearrange: "Writing",
+};
+
 export function BlockEditor({
   examId,
   initialQuestions,
   initialPassages,
-  publishButton,
+  externalShowPreview,
+  onClosePreview,
+  externalSaveTrigger,
+  onSavingChange,
+  onSaved,
 }: {
   examId: string;
   initialQuestions: Question[];
   initialPassages: Passage[];
-  publishButton?: React.ReactNode;
+  externalShowPreview?: boolean;
+  onClosePreview?: () => void;
+  externalSaveTrigger?: number;
+  onSavingChange?: (saving: boolean) => void;
+  onSaved?: () => void;
 }) {
   const [blocks, setBlocks] = useState<Block[]>(() => fromExisting(initialQuestions, initialPassages));
   const [removedQuestionIds, setRemovedQuestionIds] = useState<string[]>([]);
   const [removedPassageIds, setRemovedPassageIds] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const blockRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const readingOptions = useMemo(
     () => blocks
@@ -108,6 +119,9 @@ export function BlockEditor({
       : type === "reading" ? newReadingBlock(nextId())
       : newInstructionBlock(nextId());
     setBlocks((b) => [...b, block]);
+    requestAnimationFrame(() => {
+      blockRefs.current[block.id]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   }
 
   function updateBlock(id: string, updater: (b: Block) => Block) {
@@ -133,9 +147,8 @@ export function BlockEditor({
   }
 
   async function save() {
-    setSaving(true);
+    onSavingChange?.(true);
 
-    // 1. sync reading blocks -> passages, remember dbId for new ones
     const passageDbIdByBlockId = new Map<string, string>();
     for (const b of blocks) {
       if (b.type !== "reading") continue;
@@ -155,7 +168,6 @@ export function BlockEditor({
       }
     }
 
-    // 2. delete removed passages/questions
     for (const id of removedPassageIds) {
       await fetch(`/api/exams/${examId}/passages/${id}`, { method: "DELETE" });
     }
@@ -163,8 +175,6 @@ export function BlockEditor({
       await fetch(`/api/exams/${examId}/questions/${id}`, { method: "DELETE" });
     }
 
-    // 3. sync question blocks, computing instruction (nearest preceding
-    // Instruction block) and part/passage_id (from the chosen Reading block)
     let currentInstruction = "";
     let orderIndex = 0;
     const updatedBlocks = [...blocks];
@@ -185,7 +195,7 @@ export function BlockEditor({
       } else if (question_type === "fill_blank") {
         correct_answer = b.data.fill_answer;
       } else if (question_type === "order") {
-        const shuffled = shuffleOrderItems(b.data.order_items.filter((s) => s.trim()));
+        const shuffled = shuffleOrderItems(b.data.order_items.filter((s: string) => s.trim()));
         options = shuffled.options;
         correct_answer = shuffled.correct_answer;
       } else {
@@ -219,115 +229,135 @@ export function BlockEditor({
     setBlocks(updatedBlocks);
     setRemovedQuestionIds([]);
     setRemovedPassageIds([]);
-    setSaving(false);
-    setSavedAt(new Date());
+    onSavingChange?.(false);
+    onSaved?.();
   }
 
+  // trigger save from the top bar's Save button
+  useEffect(() => {
+    if (externalSaveTrigger && externalSaveTrigger > 0) save();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalSaveTrigger]);
+
+  function refreshAfterImport() {
+    window.location.reload();
+  }
+
+  let questionCounter = 0;
+
   return (
-    <div className="space-y-4">
-      {/* 2. Danh sách block Header */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-bold text-indigo-700">
-            2
-          </span>
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Danh sách câu hỏi & đọc hiểu ({blocks.length})
-          </h2>
-        </div>
-      </div>
-
-      {/* Block List */}
-      <div className="space-y-3">
-        {blocks.map((b, i) => (
-          <div key={b.id} className="group/row relative">
-            <div className="absolute -left-7 top-3 hidden flex-col gap-1 group-hover/row:flex">
-              <button
-                onClick={() => move(b.id, -1)}
-                disabled={i === 0}
-                className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 disabled:opacity-20"
-                title="Di chuyển lên"
-              >
-                ↑
-              </button>
-              <button
-                onClick={() => move(b.id, 1)}
-                disabled={i === blocks.length - 1}
-                className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 disabled:opacity-20"
-                title="Di chuyển xuống"
-              >
-                ↓
-              </button>
-            </div>
-
-            {b.type === "instruction" && (
-              <InstructionBlockCard
-                text={b.data.text}
-                onChange={(text) => updateBlock(b.id, (blk) => ({ ...blk, data: { text } }) as Block)}
-                onDelete={() => deleteBlock(b.id)}
-              />
-            )}
-            {b.type === "reading" && (
-              <ReadingBlockCard
-                data={b.data}
-                onChange={(data) => updateBlock(b.id, (blk) => ({ ...blk, data }) as Block)}
-                onDelete={() => deleteBlock(b.id)}
-              />
-            )}
-            {b.type === "question" && (
-              <QuestionBlockCard
-                index={blocks.slice(0, i + 1).filter((x) => x.type === "question").length - 1}
-                data={b.data}
-                readingOptions={readingOptions}
-                passageBlockId={b.passageBlockId}
-                onChangePassage={(id) => updateBlock(b.id, (blk) =>
-                  blk.type === "question" ? { ...blk, passageBlockId: id } : blk
-                )}
-                onChange={(data) => updateBlock(b.id, (blk) =>
-                  blk.type === "question" ? { ...blk, data } : blk
-                )}
-                onDelete={() => deleteBlock(b.id)}
-              />
-            )}
+    <div className="flex">
+      {/* ---------- Sidebar ---------- */}
+      <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-64 shrink-0 overflow-y-auto border-r border-border px-3 py-4">
+        <details className="mb-4 rounded-lg border border-border p-2 text-sm">
+          <summary className="cursor-pointer select-none text-ink-soft">Import</summary>
+          <div className="mt-2 space-y-2">
+            <ExcelImport examId={examId} onImported={refreshAfterImport} />
+            <PdfImport examId={examId} onImported={refreshAfterImport} />
           </div>
-        ))}
-      </div>
+        </details>
 
-      <div className="pt-2">
-        <AddBlockMenu onAdd={addBlock} />
-      </div>
-
-      {/* 3. Floating Action Dock (Dính đáy màn hình, dạng Pill nổi sang trọng) */}
-      <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-slate-700/60 bg-slate-900/90 p-2 pl-5 pr-2 text-white shadow-2xl backdrop-blur-md transition-all">
-        <div className="flex items-center gap-2 text-xs">
-          {saving ? (
-            <span className="flex items-center gap-1 font-medium text-amber-400">
-              <span className="h-2 w-2 animate-ping rounded-full bg-amber-400" />
-              Đang lưu…
-            </span>
-          ) : savedAt ? (
-            <span className="text-slate-400">
-              Đã lưu {savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </span>
-          ) : (
-            <span className="text-slate-400">Chưa lưu</span>
-          )}
+        <div className="space-y-1">
+          {blocks.map((b) => {
+            if (b.type === "question") {
+              questionCounter++;
+              const label = b.data.question_text || b.data.context || "(empty)";
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => blockRefs.current[b.id]?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                  className="flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-paper-dark"
+                >
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink text-[10px] text-paper">
+                    {questionCounter}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{label}</span>
+                    <span className="text-xs text-ink-soft">{TYPE_SHORT[b.data.question_type]}</span>
+                  </span>
+                </button>
+              );
+            }
+            if (b.type === "reading") {
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => blockRefs.current[b.id]?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-ink-soft hover:bg-paper-dark"
+                >
+                  <span>▤</span>
+                  <span className="truncate">{b.data.title || "Reading"}</span>
+                </button>
+              );
+            }
+            return (
+              <button
+                key={b.id}
+                onClick={() => blockRefs.current[b.id]?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-ink-soft hover:bg-paper-dark"
+              >
+                <span>#</span>
+                <span className="truncate">{b.data.text || "Instruction"}</span>
+              </button>
+            );
+          })}
         </div>
 
-        <div className="h-4 w-px bg-slate-700/80" />
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setShowPreview(true)}>
-            Xem trước
-          </Button>
-          <Button onClick={save} disabled={saving}>
-            {saving ? "Đang lưu…" : "Lưu"}
-          </Button>
-          {publishButton}
+        <div className="mt-2">
+          <AddBlockMenu onAdd={addBlock} />
         </div>
-      </div>
+      </aside>
 
-      {showPreview && <PreviewModal blocks={blocks} onClose={() => setShowPreview(false)} />}
+      {/* ---------- Main content ---------- */}
+      <main className="mx-auto max-w-2xl flex-1 px-6 py-8">
+        <div className="space-y-3">
+          {blocks.map((b, i) => {
+            const common = { ref: (el: HTMLDivElement | null) => { blockRefs.current[b.id] = el; } };
+            if (b.type === "instruction") {
+              return (
+                <div key={b.id} {...common}>
+                  <InstructionBlockCard
+                    text={b.data.text}
+                    onChange={(text) => updateBlock(b.id, (blk) => ({ ...blk, data: { text } }) as Block)}
+                    onDelete={() => deleteBlock(b.id)}
+                  />
+                </div>
+              );
+            }
+            if (b.type === "reading") {
+              return (
+                <div key={b.id} {...common}>
+                  <ReadingBlockCard
+                    data={b.data}
+                    onChange={(data) => updateBlock(b.id, (blk) => ({ ...blk, data }) as Block)}
+                    onDelete={() => deleteBlock(b.id)}
+                  />
+                </div>
+              );
+            }
+            const qIndex = blocks.slice(0, i + 1).filter((x) => x.type === "question").length - 1;
+            return (
+              <div key={b.id} {...common}>
+                <QuestionBlockCard
+                  index={qIndex}
+                  data={b.data}
+                  readingOptions={readingOptions}
+                  passageBlockId={b.passageBlockId}
+                  onChangePassage={(id) => updateBlock(b.id, (blk) =>
+                    blk.type === "question" ? { ...blk, passageBlockId: id } : blk
+                  )}
+                  onChange={(data) => updateBlock(b.id, (blk) =>
+                    blk.type === "question" ? { ...blk, data } : blk
+                  )}
+                  onDelete={() => deleteBlock(b.id)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </main>
+
+      {externalShowPreview && <PreviewModal blocks={blocks} onClose={() => onClosePreview?.()} />}
     </div>
   );
 }

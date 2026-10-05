@@ -7,9 +7,9 @@ import { RichTextField } from "@/components/exam-builder/RichTextField";
 const TYPE_LABELS: Record<QuestionType, string> = {
   multiple_choice: "Multiple choice",
   fill_blank: "Fill in the blank",
-  order: "Order (sắp xếp câu)",
-  writing_rewrite: "Writing — Rewrite",
-  writing_rearrange: "Writing — Rearrange",
+  order: "Order",
+  writing_rewrite: "Rewrite",
+  writing_rearrange: "Rearrange",
 };
 
 export function QuestionBlockCard({
@@ -34,15 +34,12 @@ export function QuestionBlockCard({
   }
 
   return (
-    <div className="group rounded-card bg-paper-dark p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-ink-soft">
-          <span className="cursor-grab select-none">⠿</span>
-          <span>Question {index + 1}:</span>
-        </div>
+    <div className="group rounded-card border border-border p-4">
+      <div className="mb-3 flex items-center justify-between text-sm">
+        <span className="text-ink-soft">Q{index + 1}</span>
         <div className="flex items-center gap-2">
           <select
-            className="rounded-full border border-border bg-paper px-3 py-1 text-sm"
+            className="rounded-full border border-border bg-paper px-2 py-1 text-xs"
             value={data.question_type}
             onChange={(e) => onChange({ ...data, question_type: e.target.value as QuestionType })}
           >
@@ -52,44 +49,38 @@ export function QuestionBlockCard({
           </select>
           <button
             onClick={onDelete}
-            className="opacity-0 group-hover:opacity-100 text-sm text-red-600 transition"
+            className="opacity-0 group-hover:opacity-100 text-red-600 transition"
           >
-            Xoá
+            ✕
           </button>
         </div>
       </div>
 
       {readingOptions.length > 0 && (
         <select
-          className="input-field mb-3 text-sm"
+          className="mb-2 w-full rounded border border-border bg-paper px-2 py-1 text-xs text-ink-soft"
           value={passageBlockId ?? ""}
           onChange={(e) => onChangePassage(e.target.value || null)}
         >
-          <option value="">Không thuộc đoạn Reading nào (Part 1)</option>
+          <option value="">No passage</option>
           {readingOptions.map((r) => (
-            <option key={r.id} value={r.id}>Thuộc: {r.label || "(đoạn Reading chưa đặt tên)"}</option>
+            <option key={r.id} value={r.id}>{r.label || "Untitled passage"}</option>
           ))}
         </select>
       )}
 
-      <div className="mb-3">
-        <RichTextField
-          multiline
-          placeholder={
-            data.question_type === "multiple_choice"
-              ? "Nội dung câu hỏi — để trống nếu là câu trọng âm/phát âm (đề bài đã nằm trong Instruction block phía trên)"
-              : "Nội dung câu hỏi (dùng ___ cho chỗ trống nếu là fill in the blank)"
-          }
-          value={data.question_text}
-          onChange={(val) => onChange({ ...data, question_text: val })}
-        />
-      </div>
+      <RichTextField
+        multiline
+        placeholder={data.question_type === "multiple_choice" ? "Question (optional)" : "Question text"}
+        value={data.question_text}
+        onChange={(val) => onChange({ ...data, question_text: val })}
+      />
 
-      <details className="mb-3">
-        <summary className="cursor-pointer text-sm text-ink-soft">+ Thêm context (hội thoại/tình huống dẫn nhập)</summary>
-        <div className="mt-2">
+      <details className="mt-2">
+        <summary className="cursor-pointer text-xs text-ink-soft">+ Context</summary>
+        <div className="mt-1">
           <RichTextField
-            placeholder="VD: Linh is walking home. Her friend, Nam, offers a ride."
+            placeholder="e.g. A: ..."
             value={data.context}
             onChange={(val) => onChange({ ...data, context: val })}
           />
@@ -97,25 +88,21 @@ export function QuestionBlockCard({
       </details>
 
       {data.question_type === "multiple_choice" && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="mt-3 grid grid-cols-2 gap-2">
           {(["A", "B", "C", "D"] as const).map((key) => (
             <div
               key={key}
-              className="flex items-start gap-2 rounded-lg border border-border bg-paper px-3 py-2"
+              className="flex items-start gap-2 rounded-lg border border-border px-2 py-1.5"
             >
-              <span className="mt-2 font-bold">{key}</span>
+              <span className="mt-2 text-xs font-bold text-ink-soft">{key}</span>
               <div className="flex-1">
-                <RichTextField
-                  value={data.options[key]}
-                  onChange={(val) => setOption(key, val)}
-                />
+                <RichTextField value={data.options[key]} onChange={(val) => setOption(key, val)} />
               </div>
               <button
                 type="button"
                 onClick={() => onChange({ ...data, correct_letter: key })}
-                title="Đánh dấu đáp án đúng"
-                className={`mt-2 h-5 w-5 shrink-0 rounded-full border-2 transition
-                  ${data.correct_letter === key ? "border-ink bg-ink" : "border-blue-300 bg-blue-100"}`}
+                className={`mt-2 h-4 w-4 shrink-0 rounded-full border-2 transition
+                  ${data.correct_letter === key ? "border-ink bg-ink" : "border-ink-soft/30"}`}
               />
             </div>
           ))}
@@ -124,23 +111,22 @@ export function QuestionBlockCard({
 
       {data.question_type === "fill_blank" && (
         <input
-          className="input-field"
-          placeholder="Đáp án đúng (nhiều đáp án cách nhau bởi ;)"
+          className="input-field mt-3"
+          placeholder="Correct answer(s), separated by ;"
           value={data.fill_answer}
           onChange={(e) => onChange({ ...data, fill_answer: e.target.value })}
         />
       )}
 
       {data.question_type === "order" && (
-        <div className="space-y-2">
-          <p className="text-xs text-ink-soft">Nhập các câu/mệnh đề theo ĐÚNG thứ tự — hệ thống sẽ tự xáo trộn khi hiển thị cho học sinh.</p>
+        <div className="mt-3 space-y-1.5">
           {data.order_items.map((item: string, i: number) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs text-paper">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink text-[10px] text-paper">
                 {i + 1}
               </span>
               <input
-                className="input-field flex-1"
+                className="input-field flex-1 py-1.5"
                 value={item}
                 onChange={(e) => {
                   const next = [...data.order_items];
@@ -161,35 +147,33 @@ export function QuestionBlockCard({
           <button
             type="button"
             onClick={() => onChange({ ...data, order_items: [...data.order_items, ""] })}
-            className="text-sm text-ink-soft hover:text-ink"
+            className="text-xs text-ink-soft hover:text-ink"
           >
-            + Thêm câu
+            + Add item
           </button>
         </div>
       )}
 
       {(data.question_type === "writing_rewrite" || data.question_type === "writing_rearrange") && (
         <input
-          className="input-field"
-          placeholder="Câu mẫu đúng (nhiều đáp án chấp nhận được cách nhau bởi ;)"
+          className="input-field mt-3"
+          placeholder="Model answer(s), separated by ;"
           value={data.writing_answers}
           onChange={(e) => onChange({ ...data, writing_answers: e.target.value })}
         />
       )}
 
-      <div className="mt-3 flex items-center gap-3">
-        <label className="flex items-center gap-2 text-sm text-ink-soft">
-          Điểm:
-          <input
-            type="number"
-            min={0.5}
-            step={0.5}
-            className="input-field w-20"
-            value={data.points}
-            onChange={(e) => onChange({ ...data, points: Number(e.target.value) })}
-          />
-        </label>
-      </div>
+      <label className="mt-2 flex items-center gap-2 text-xs text-ink-soft">
+        Points
+        <input
+          type="number"
+          min={0.5}
+          step={0.5}
+          className="w-14 rounded border border-border bg-paper px-1.5 py-0.5"
+          value={data.points}
+          onChange={(e) => onChange({ ...data, points: Number(e.target.value) })}
+        />
+      </label>
     </div>
   );
 }
