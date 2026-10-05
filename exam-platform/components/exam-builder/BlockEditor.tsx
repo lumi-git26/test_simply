@@ -82,10 +82,12 @@ export function BlockEditor({
   examId,
   initialQuestions,
   initialPassages,
+  publishButton,
 }: {
   examId: string;
   initialQuestions: Question[];
   initialPassages: Passage[];
+  publishButton?: React.ReactNode;
 }) {
   const [blocks, setBlocks] = useState<Block[]>(() => fromExisting(initialQuestions, initialPassages));
   const [removedQuestionIds, setRemovedQuestionIds] = useState<string[]>([]);
@@ -223,15 +225,12 @@ export function BlockEditor({
 
   return (
     <div>
+      {/* Header khu vực danh sách block */}
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold">Nội dung bài kiểm tra</h2>
-        <div className="flex items-center gap-3">
-          {savedAt && <span className="text-xs text-ink-soft">Đã lưu {savedAt.toLocaleTimeString()}</span>}
-          <Button variant="outline" onClick={() => setShowPreview(true)}>Xem trước</Button>
-          <Button onClick={save} disabled={saving}>{saving ? "Đang lưu…" : "Lưu"}</Button>
-        </div>
       </div>
 
+      {/* Danh sách block */}
       <div className="space-y-2">
         {blocks.map((b, i) => (
           <div key={b.id} className="group/row relative">
@@ -274,6 +273,25 @@ export function BlockEditor({
       </div>
 
       <AddBlockMenu onAdd={addBlock} />
+
+      {/* 3. Floating Action Bar dính đáy màn hình chứa: Trạng thái lưu, Xem trước, Lưu, Publish/Share */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 px-6 py-3 shadow-lg backdrop-blur md:px-16">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
+          <div className="text-xs text-ink-soft">
+            {savedAt && <span>Đã lưu {savedAt.toLocaleTimeString()}</span>}
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => setShowPreview(true)}>
+              Xem trước
+            </Button>
+            <Button onClick={save} disabled={saving}>
+              {saving ? "Đang lưu…" : "Lưu"}
+            </Button>
+            {publishButton}
+          </div>
+        </div>
+      </div>
+
       {showPreview && <PreviewModal blocks={blocks} onClose={() => setShowPreview(false)} />}
     </div>
   );

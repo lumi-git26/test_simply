@@ -38,7 +38,8 @@ export function ExamEditor({
   }
 
   return (
-    <main className="min-h-screen px-6 py-10 md:px-16">
+    <main className="min-h-screen px-6 py-10 pb-28 md:px-16">
+      {/* Header: Tiêu đề & Thời gian làm bài */}
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <input
           className="input-field max-w-md text-xl font-bold"
@@ -57,24 +58,28 @@ export function ExamEditor({
               onBlur={saveHeader}
             />
           </label>
-          <Button onClick={() => setShowShare(true)}>
-            {status === "published" ? "Share / Settings" : "Publish"}
-          </Button>
         </div>
       </div>
 
-      <div className="ml-8">
-        <BlockEditor
-           key={`${initialQuestions.length}-${initialPassages.length}`}
-            examId={exam.id}
-           initialQuestions={initialQuestions}
-           initialPassages={initialPassages}
-/>
-      </div>
-
-      <div className="mt-12 grid gap-6 md:grid-cols-2">
+      {/* 1. Import Excel / PDF - Đặt lên TRÊN CÙNG */}
+      <div className="mb-8 grid gap-6 md:grid-cols-2">
         <ExcelImport examId={exam.id} onImported={() => router.refresh()} />
         <PdfImport examId={exam.id} onImported={() => router.refresh()} />
+      </div>
+
+      {/* 2. Danh sách block (Reading/Instruction/Question) - Ở GIỮA */}
+      <div>
+        <BlockEditor
+          key={`${initialQuestions.length}-${initialPassages.length}`}
+          examId={exam.id}
+          initialQuestions={initialQuestions}
+          initialPassages={initialPassages}
+          publishButton={
+            <Button onClick={() => setShowShare(true)}>
+              {status === "published" ? "Share / Settings" : "Publish"}
+            </Button>
+          }
+        />
       </div>
 
       {showShare && (
