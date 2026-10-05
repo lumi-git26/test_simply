@@ -1,7 +1,5 @@
 "use client";
 
-import { RichTextField } from "@/components/exam-builder/RichTextField";
-
 export function InstructionBlockCard({
   text,
   onChange,
@@ -12,12 +10,15 @@ export function InstructionBlockCard({
   onDelete: () => void;
 }) {
   return (
-    <div className="group flex items-start gap-2 rounded-card bg-paper-dark px-3 py-2">
-      <span className="mt-1.5 text-ink-soft">#</span>
-      <div className="flex-1">
-        <RichTextField placeholder="Instruction for the following questions" value={text} onChange={onChange} />
-      </div>
-      <button onClick={onDelete} className="mt-1.5 opacity-0 group-hover:opacity-100 text-sm text-red-600 transition">✕</button>
+    <div className="group flex items-center gap-2 rounded-card bg-paper-dark px-3 py-2.5">
+      <span className="text-ink-soft">#</span>
+      <input
+        className="flex-1 bg-transparent italic outline-none placeholder:text-ink-soft/50"
+        placeholder="Type your instruction here"
+        value={text}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <button onClick={onDelete} className="opacity-0 group-hover:opacity-100 text-sm text-red-600 transition">✕</button>
     </div>
   );
 }

@@ -17,7 +17,7 @@ fontFamily: {
   exam: ["var(--font-montserrat)", "system-ui", "sans-serif"],
 },
       borderRadius: {
-        card: "16px",
+        card: "6px",
       },
     },
   },
