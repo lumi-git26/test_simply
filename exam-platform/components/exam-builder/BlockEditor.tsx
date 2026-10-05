@@ -224,19 +224,40 @@ export function BlockEditor({
   }
 
   return (
-    <div>
-      {/* Header khu vực danh sách block */}
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold">Nội dung bài kiểm tra</h2>
+    <div className="space-y-4">
+      {/* 2. Danh sách block Header */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-bold text-indigo-700">
+            2
+          </span>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            Danh sách câu hỏi & đọc hiểu ({blocks.length})
+          </h2>
+        </div>
       </div>
 
-      {/* Danh sách block */}
-      <div className="space-y-2">
+      {/* Block List */}
+      <div className="space-y-3">
         {blocks.map((b, i) => (
           <div key={b.id} className="group/row relative">
-            <div className="absolute -left-8 top-2 hidden flex-col gap-1 group-hover/row:flex">
-              <button onClick={() => move(b.id, -1)} disabled={i === 0} className="text-ink-soft disabled:opacity-20">↑</button>
-              <button onClick={() => move(b.id, 1)} disabled={i === blocks.length - 1} className="text-ink-soft disabled:opacity-20">↓</button>
+            <div className="absolute -left-7 top-3 hidden flex-col gap-1 group-hover/row:flex">
+              <button
+                onClick={() => move(b.id, -1)}
+                disabled={i === 0}
+                className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 disabled:opacity-20"
+                title="Di chuyển lên"
+              >
+                ↑
+              </button>
+              <button
+                onClick={() => move(b.id, 1)}
+                disabled={i === blocks.length - 1}
+                className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 disabled:opacity-20"
+                title="Di chuyển xuống"
+              >
+                ↓
+              </button>
             </div>
 
             {b.type === "instruction" && (
@@ -272,23 +293,37 @@ export function BlockEditor({
         ))}
       </div>
 
-      <AddBlockMenu onAdd={addBlock} />
+      <div className="pt-2">
+        <AddBlockMenu onAdd={addBlock} />
+      </div>
 
-      {/* 3. Floating Action Bar dính đáy màn hình chứa: Trạng thái lưu, Xem trước, Lưu, Publish/Share */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 px-6 py-3 shadow-lg backdrop-blur md:px-16">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div className="text-xs text-ink-soft">
-            {savedAt && <span>Đã lưu {savedAt.toLocaleTimeString()}</span>}
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => setShowPreview(true)}>
-              Xem trước
-            </Button>
-            <Button onClick={save} disabled={saving}>
-              {saving ? "Đang lưu…" : "Lưu"}
-            </Button>
-            {publishButton}
-          </div>
+      {/* 3. Floating Action Dock (Dính đáy màn hình, dạng Pill nổi sang trọng) */}
+      <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-slate-700/60 bg-slate-900/90 p-2 pl-5 pr-2 text-white shadow-2xl backdrop-blur-md transition-all">
+        <div className="flex items-center gap-2 text-xs">
+          {saving ? (
+            <span className="flex items-center gap-1 font-medium text-amber-400">
+              <span className="h-2 w-2 animate-ping rounded-full bg-amber-400" />
+              Đang lưu…
+            </span>
+          ) : savedAt ? (
+            <span className="text-slate-400">
+              Đã lưu {savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          ) : (
+            <span className="text-slate-400">Chưa lưu</span>
+          )}
+        </div>
+
+        <div className="h-4 w-px bg-slate-700/80" />
+
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setShowPreview(true)}>
+            Xem trước
+          </Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? "Đang lưu…" : "Lưu"}
+          </Button>
+          {publishButton}
         </div>
       </div>
 

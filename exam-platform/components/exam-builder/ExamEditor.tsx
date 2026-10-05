@@ -38,37 +38,49 @@ export function ExamEditor({
   }
 
   return (
-    <main className="min-h-screen px-6 py-10 pb-28 md:px-16">
-      {/* Header: Tiêu đề & Thời gian làm bài */}
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <input
-          className="input-field max-w-md text-xl font-bold"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={saveHeader}
-        />
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-ink-soft">
-            Thời gian (phút):
+    <main className="min-h-screen bg-slate-50/50 px-4 py-8 pb-32 md:px-8">
+      <div className="mx-auto max-w-4xl space-y-6">
+        {/* Header: Tên bài thi & Thời gian */}
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all hover:shadow-md">
+          <input
+            className="flex-1 bg-transparent text-xl font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none"
+            placeholder="Nhập tên bài kiểm tra..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={saveHeader}
+          />
+          <div className="flex items-center gap-2 rounded-xl bg-slate-100/80 px-3 py-1.5 text-xs font-medium text-slate-600">
+            <span>⏱️ Thời gian:</span>
             <input
               type="number"
-              className="input-field w-24"
+              className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1 text-center font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
               value={timeLimit}
               onChange={(e) => setTimeLimit(e.target.value === "" ? "" : Number(e.target.value))}
               onBlur={saveHeader}
             />
-          </label>
+            <span>phút</span>
+          </div>
         </div>
-      </div>
 
-      {/* 1. Import Excel / PDF - Đặt lên TRÊN CÙNG */}
-      <div className="mb-8 grid gap-6 md:grid-cols-2">
-        <ExcelImport examId={exam.id} onImported={() => router.refresh()} />
-        <PdfImport examId={exam.id} onImported={() => router.refresh()} />
-      </div>
+        {/* 1. Import Excel / PDF - Đặt lên TRÊN CÙNG (Compact Card) */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-bold text-indigo-700">
+                1
+              </span>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Nhập đề từ file (Excel / PDF)
+              </h3>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ExcelImport examId={exam.id} onImported={() => router.refresh()} />
+            <PdfImport examId={exam.id} onImported={() => router.refresh()} />
+          </div>
+        </div>
 
-      {/* 2. Danh sách block (Reading/Instruction/Question) - Ở GIỮA */}
-      <div>
+        {/* 2. Danh sách block & 3. Floating Actions */}
         <BlockEditor
           key={`${initialQuestions.length}-${initialPassages.length}`}
           examId={exam.id}
