@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PublicQuestion } from "@/lib/types";
 import { mcLayout } from "@/lib/mc-layout";
+import { parseRichText } from "@/lib/richtext";
 
 export function QuestionRenderer({
   index,
@@ -28,9 +29,7 @@ export function QuestionRenderer({
       {/* Context (dialogue/conversation setup) shown separately, before the
           question itself — e.g. "Linh is walking home. Her friend, Nam,
           offers a ride." shown before the actual line to complete. */}
-      {question.context && (
-        <p className="mb-2 text-ink-soft">{question.context}</p>
-      )}
+      {question.context && <p className="mb-2 text-ink-soft">{parseRichText(question.context)}</p>}
 
       <p className="text-lg">
         Question {index + 1}
@@ -39,7 +38,7 @@ export function QuestionRenderer({
           (question.question_type === "fill_blank" ? (
             <InlineBlank question={question} value={value} onChange={onChange} />
           ) : (
-            question.question_text
+            question.question_text && parseRichText(question.question_text)
           ))}
       </p>
 
@@ -98,7 +97,7 @@ function MultipleChoiceOptions({
               ${selected ? "border-ink bg-ink text-paper" : "border-transparent hover:border-ink"}
             `}
           >
-            {key}. {options[key]}
+            {key}. {parseRichText(options[key])}
           </button>
         );
       })}

@@ -64,7 +64,12 @@ export function ExamEditor({
       </div>
 
       <div className="ml-8">
-        <BlockEditor examId={exam.id} initialQuestions={initialQuestions} initialPassages={initialPassages} />
+        <BlockEditor
+           key={`${initialQuestions.length}-${initialPassages.length}`}
+            examId={exam.id}
+           initialQuestions={initialQuestions}
+           initialPassages={initialPassages}
+/>
       </div>
 
       <div className="mt-12 grid gap-6 md:grid-cols-2">

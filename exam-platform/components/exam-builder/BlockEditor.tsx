@@ -10,6 +10,7 @@ import { QuestionBlockCard } from "@/components/exam-builder/QuestionBlockCard";
 import { ReadingBlockCard } from "@/components/exam-builder/ReadingBlockCard";
 import { InstructionBlockCard } from "@/components/exam-builder/InstructionBlockCard";
 import { Button } from "@/components/ui/Button";
+import { PreviewModal } from "@/components/exam-builder/PreviewModal";
 
 let uid = 0;
 const nextId = () => `blk_${Date.now()}_${uid++}`;
@@ -90,6 +91,7 @@ export function BlockEditor({
   const [removedQuestionIds, setRemovedQuestionIds] = useState<string[]>([]);
   const [removedPassageIds, setRemovedPassageIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
   const readingOptions = useMemo(
@@ -225,6 +227,7 @@ export function BlockEditor({
         <h2 className="text-lg font-bold">Nội dung bài kiểm tra</h2>
         <div className="flex items-center gap-3">
           {savedAt && <span className="text-xs text-ink-soft">Đã lưu {savedAt.toLocaleTimeString()}</span>}
+          <Button variant="outline" onClick={() => setShowPreview(true)}>Xem trước</Button>
           <Button onClick={save} disabled={saving}>{saving ? "Đang lưu…" : "Lưu"}</Button>
         </div>
       </div>
@@ -271,6 +274,7 @@ export function BlockEditor({
       </div>
 
       <AddBlockMenu onAdd={addBlock} />
+      {showPreview && <PreviewModal blocks={blocks} onClose={() => setShowPreview(false)} />}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { QuestionBlockData } from "@/lib/blocks";
 import { QuestionType } from "@/lib/types";
+import { RichTextField } from "@/components/exam-builder/RichTextField";
 
 const TYPE_LABELS: Record<QuestionType, string> = {
   multiple_choice: "Multiple choice",
@@ -71,25 +72,28 @@ export function QuestionBlockCard({
         </select>
       )}
 
-      <textarea
-        className="input-field mb-3"
-        placeholder={
-          data.question_type === "multiple_choice"
-            ? "Nội dung câu hỏi — để trống nếu là câu trọng âm/phát âm (đề bài đã nằm trong Instruction block phía trên)"
-            : "Nội dung câu hỏi (dùng ___ cho chỗ trống nếu là fill in the blank)"
-        }
-        value={data.question_text}
-        onChange={(e) => onChange({ ...data, question_text: e.target.value })}
-      />
+      <div className="mb-3">
+        <RichTextField
+          multiline
+          placeholder={
+            data.question_type === "multiple_choice"
+              ? "Nội dung câu hỏi — để trống nếu là câu trọng âm/phát âm (đề bài đã nằm trong Instruction block phía trên)"
+              : "Nội dung câu hỏi (dùng ___ cho chỗ trống nếu là fill in the blank)"
+          }
+          value={data.question_text}
+          onChange={(val) => onChange({ ...data, question_text: val })}
+        />
+      </div>
 
       <details className="mb-3">
         <summary className="cursor-pointer text-sm text-ink-soft">+ Thêm context (hội thoại/tình huống dẫn nhập)</summary>
-        <input
-          className="input-field mt-2 text-sm"
-          placeholder="VD: Linh is walking home. Her friend, Nam, offers a ride."
-          value={data.context}
-          onChange={(e) => onChange({ ...data, context: e.target.value })}
-        />
+        <div className="mt-2">
+          <RichTextField
+            placeholder="VD: Linh is walking home. Her friend, Nam, offers a ride."
+            value={data.context}
+            onChange={(val) => onChange({ ...data, context: val })}
+          />
+        </div>
       </details>
 
       {data.question_type === "multiple_choice" && (
@@ -97,19 +101,20 @@ export function QuestionBlockCard({
           {(["A", "B", "C", "D"] as const).map((key) => (
             <div
               key={key}
-              className="flex items-center gap-2 rounded-lg border border-border bg-paper px-3 py-2"
+              className="flex items-start gap-2 rounded-lg border border-border bg-paper px-3 py-2"
             >
-              <span className="font-bold">{key}</span>
-              <input
-                className="flex-1 bg-transparent outline-none"
-                value={data.options[key]}
-                onChange={(e) => setOption(key, e.target.value)}
-              />
+              <span className="mt-2 font-bold">{key}</span>
+              <div className="flex-1">
+                <RichTextField
+                  value={data.options[key]}
+                  onChange={(val) => setOption(key, val)}
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => onChange({ ...data, correct_letter: key })}
                 title="Đánh dấu đáp án đúng"
-                className={`h-5 w-5 shrink-0 rounded-full border-2 transition
+                className={`mt-2 h-5 w-5 shrink-0 rounded-full border-2 transition
                   ${data.correct_letter === key ? "border-ink bg-ink" : "border-blue-300 bg-blue-100"}`}
               />
             </div>
@@ -129,7 +134,7 @@ export function QuestionBlockCard({
       {data.question_type === "order" && (
         <div className="space-y-2">
           <p className="text-xs text-ink-soft">Nhập các câu/mệnh đề theo ĐÚNG thứ tự — hệ thống sẽ tự xáo trộn khi hiển thị cho học sinh.</p>
-          {data.order_items.map((item, i) => (
+          {data.order_items.map((item: string, i: number) => (
             <div key={i} className="flex items-center gap-2">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs text-paper">
                 {i + 1}
@@ -146,7 +151,7 @@ export function QuestionBlockCard({
               <button
                 type="button"
                 disabled={data.order_items.length <= 2}
-                onClick={() => onChange({ ...data, order_items: data.order_items.filter((_, idx) => idx !== i) })}
+                onClick={() => onChange({ ...data, order_items: data.order_items.filter((_: string, idx: number) => idx !== i) })}
                 className="text-red-600 disabled:opacity-30"
               >
                 ✕
