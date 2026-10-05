@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
+import { toggleFormat, isSelectionWrapped } from "@/lib/richtext";
 
 export function RichTextField({
   value,
@@ -14,66 +15,48 @@ export function RichTextField({
   multiline?: boolean;
 }) {
   const ref = useRef<any>(null);
-  const [hasSelection, setHasSelection] = useState(false);
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
 
   function checkSelection() {
     const el = ref.current;
     if (!el) return;
-    setHasSelection((el.selectionEnd ?? 0) > (el.selectionStart ?? 0));
+    setSelection({ start: el.selectionStart ?? 0, end: el.selectionEnd ?? 0 });
   }
 
-  // Hide the toolbar as soon as focus leaves the field, with a tiny delay
-  // so a click on the toolbar button itself isn't missed.
   function onBlur() {
-    setTimeout(() => setHasSelection(false), 150);
+    setTimeout(() => setSelection({ start: 0, end: 0 }), 150);
   }
 
-  function wrap(marker: string) {
+  function toggle(kind: "bold" | "italic" | "underline") {
     const el = ref.current;
     if (!el) return;
-    const start = el.selectionStart ?? 0;
-    const end = el.selectionEnd ?? 0;
-    if (end <= start) return; // no selection, nothing to wrap
-    const before = value.slice(0, start);
-    const selected = value.slice(start, end);
-    const after = value.slice(end);
-    onChange(`${before}${marker}${selected}${marker}${after}`);
+    const { start, end } = selection;
+    if (end <= start) return;
+    const result = toggleFormat(value, start, end, kind);
+    onChange(result.text);
     requestAnimationFrame(() => {
       el.focus();
-      el.setSelectionRange(start + marker.length, start + marker.length + selected.length);
+      el.setSelectionRange(result.start, result.end);
+      setSelection({ start: result.start, end: result.end });
     });
   }
+
+  const hasSelection = selection.end > selection.start;
+  const active = {
+    bold: hasSelection && isSelectionWrapped(value, selection.start, selection.end, "bold"),
+    italic: hasSelection && isSelectionWrapped(value, selection.start, selection.end, "italic"),
+    underline: hasSelection && isSelectionWrapped(value, selection.start, selection.end, "underline"),
+  };
 
   const Field: any = multiline ? "textarea" : "input";
 
   return (
     <div className="relative">
       {hasSelection && (
-        <div className="absolute -top-10 left-0 z-10 flex gap-1 rounded-lg border border-border bg-ink p-1 shadow-lg">
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()} // keep textarea selection intact
-            onClick={() => wrap("**")}
-            className="flex h-7 w-7 items-center justify-center rounded text-xs font-bold text-paper hover:bg-paper/20"
-          >
-            B
-          </button>
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => wrap("*")}
-            className="flex h-7 w-7 items-center justify-center rounded text-xs italic text-paper hover:bg-paper/20"
-          >
-            I
-          </button>
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => wrap("__")}
-            className="flex h-7 w-7 items-center justify-center rounded text-xs underline text-paper hover:bg-paper/20"
-          >
-            U
-          </button>
+        <div className="absolute -top-9 left-0 z-10 flex gap-0.5 rounded-md border border-border bg-ink p-0.5 shadow-lg">
+          <ToolbarButton active={active.bold} label="B" bold onMouseDown={() => toggle("bold")} />
+          <ToolbarButton active={active.italic} label="I" italic onMouseDown={() => toggle("italic")} />
+          <ToolbarButton active={active.underline} label="U" underline onMouseDown={() => toggle("underline")} />
         </div>
       )}
       <Field
@@ -88,5 +71,37 @@ export function RichTextField({
         onBlur={onBlur}
       />
     </div>
+  );
+}
+
+function ToolbarButton({
+  active,
+  label,
+  bold,
+  italic,
+  underline,
+  onMouseDown,
+}: {
+  active: boolean;
+  label: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  onMouseDown: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onMouseDown={(e) => {
+        e.preventDefault(); // keep textarea selection intact
+        onMouseDown();
+      }}
+      className={`flex h-6 w-6 items-center justify-center rounded text-xs text-paper transition
+        ${bold ? "font-bold" : ""} ${italic ? "italic" : ""} ${underline ? "underline" : ""}
+        ${active ? "bg-paper/30" : "hover:bg-paper/15"}
+      `}
+    >
+      {label}
+    </button>
   );
 }
