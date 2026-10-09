@@ -11,12 +11,14 @@ export function QuestionRenderer({
   value,
   onChange,
   showInstruction,
+  compact,
 }: {
   index: number;
   question: PublicQuestion;
   value: string;
   onChange: (val: string) => void;
   showInstruction?: boolean;
+  compact?: boolean; // narrow side panel: fewer columns for answers
 }) {
   const hasStem = question.question_text.trim().length > 0;
 
@@ -26,9 +28,6 @@ export function QuestionRenderer({
         <p className="mb-3 italic font-semibold text-ink">{question.instruction}</p>
       )}
 
-      {/* Context (dialogue/conversation setup) shown separately, before the
-          question itself — e.g. "Linh is walking home. Her friend, Nam,
-          offers a ride." shown before the actual line to complete. */}
       {question.context && <p className="mb-2 text-ink-soft">{parseRichText(question.context)}</p>}
 
       <p className="text-lg">
@@ -38,7 +37,7 @@ export function QuestionRenderer({
           (question.question_type === "fill_blank" ? (
             <InlineBlank question={question} value={value} onChange={onChange} />
           ) : (
-            question.question_text && parseRichText(question.question_text)
+            parseRichText(question.question_text)
           ))}
       </p>
 
@@ -47,6 +46,7 @@ export function QuestionRenderer({
           options={question.options as Record<"A" | "B" | "C" | "D", string>}
           value={value}
           onChange={onChange}
+          compact={compact}
         />
       )}
 
@@ -71,12 +71,16 @@ function MultipleChoiceOptions({
   options,
   value,
   onChange,
+  compact,
 }: {
   options: Record<"A" | "B" | "C" | "D", string>;
   value: string;
   onChange: (val: string) => void;
+  compact?: boolean;
 }) {
-  const layout = mcLayout(options);
+  const base = mcLayout(options);
+  // In the narrow panel: 4-in-a-row becomes 2-in-a-row, everything else stacks.
+  const layout = compact ? (base === "grid-4" ? "grid-2" : "stack") : base;
   const containerClass =
     layout === "grid-4"
       ? "grid grid-cols-2 sm:grid-cols-4 gap-3"
@@ -105,9 +109,8 @@ function MultipleChoiceOptions({
   );
 }
 
-// Drag-and-drop reordering for "order" type questions (a/b/c/d sentence
-// ordering). value is stored as comma-separated indices into `items`
-// representing the student's current order, e.g. "2,0,1".
+// Drag-and-drop reordering for "order" questions. value is stored as
+// comma-separated indices into `items` (the student's current order).
 function OrderQuestion({
   items,
   value,
@@ -117,9 +120,7 @@ function OrderQuestion({
   value: string;
   onChange: (val: string) => void;
 }) {
-  const order = value
-    ? value.split(",").map(Number)
-    : items.map((_, i) => i);
+  const order = value ? value.split(",").map(Number) : items.map((_, i) => i);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   function move(from: number, to: number) {
@@ -184,7 +185,7 @@ function InlineBlank({
   if (!question.question_text.includes("___")) {
     return (
       <>
-        {question.question_text}
+        {parseRichText(question.question_text)}
         <input
           className="ml-2 inline-block w-32 rounded border border-ink px-2 py-1"
           value={value}
@@ -196,13 +197,13 @@ function InlineBlank({
   const [before, after] = question.question_text.split("___");
   return (
     <>
-      {before}
+      {parseRichText(before)}
       <input
         className="mx-1 inline-block w-28 rounded border border-ink px-2 py-1 text-center"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
-      {after}
+      {parseRichText(after)}
     </>
   );
 }
