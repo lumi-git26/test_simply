@@ -77,17 +77,19 @@ export function ExamEditor({
 </div>
       </header>
 
-      <BlockEditor
-        key={`${initialQuestions.length}-${initialPassages.length}`}
-        examId={exam.id}
-        initialQuestions={initialQuestions}
-        initialPassages={initialPassages}
-        externalShowPreview={showPreview}
-        onClosePreview={() => setShowPreview(false)}
-        externalSaveTrigger={saveTrigger}
-        onSavingChange={setSaving}
-        onSaved={() => setSavedAt(new Date())}
-      />
+    <BlockEditor
+      key={`${initialQuestions.length}-${initialPassages.length}`}
+      examId={exam.id}
+      examTitle={title}
+      timeLimitMinutes={timeLimit === "" ? null : Number(timeLimit)}
+      initialQuestions={initialQuestions}
+      initialPassages={initialPassages}
+      externalShowPreview={showPreview}
+      onClosePreview={() => setShowPreview(false)}
+      externalSaveTrigger={saveTrigger}
+      onSavingChange={setSaving}
+      onSaved={() => setSavedAt(new Date())}
+    />
 
       {showShare && (
         <SharePopup

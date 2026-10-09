@@ -182,27 +182,30 @@ function InlineBlank({
   value: string;
   onChange: (val: string) => void;
 }) {
-  if (!question.question_text.includes("___")) {
+  const text = question.question_text;
+  const match = text.match(/_{3,}/); // first blank, any length
+  const input = (
+    <input
+      className="mx-1 inline-block w-28 rounded border border-ink px-2 py-1 text-center"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+
+  if (!match || match.index === undefined) {
     return (
       <>
-        {parseRichText(question.question_text)}
-        <input
-          className="ml-2 inline-block w-32 rounded border border-ink px-2 py-1"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        />
+        {parseRichText(text)}
+        {input}
       </>
     );
   }
-  const [before, after] = question.question_text.split("___");
+  const before = text.slice(0, match.index);
+  const after = text.slice(match.index + match[0].length);
   return (
     <>
       {parseRichText(before)}
-      <input
-        className="mx-1 inline-block w-28 rounded border border-ink px-2 py-1 text-center"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      {input}
       {parseRichText(after)}
     </>
   );

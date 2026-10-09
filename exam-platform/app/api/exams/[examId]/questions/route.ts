@@ -10,10 +10,14 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
 
   const body = await req.json();
 
-  const { count } = await supabase
-    .from("questions")
-    .select("id", { count: "exact", head: true })
-    .eq("exam_id", params.examId);
+  let orderIndex: number = body.order_index;
+  if (typeof orderIndex !== "number") {
+    const { count } = await supabase
+      .from("questions")
+      .select("id", { count: "exact", head: true })
+      .eq("exam_id", params.examId);
+    orderIndex = count ?? 0;
+  }
 
   const { data, error } = await supabase
     .from("questions")
@@ -21,13 +25,15 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
       exam_id: params.examId,
       passage_id: body.passage_id ?? null,
       part: body.part ?? 1,
-      order_index: count ?? 0,
+      order_index: orderIndex,
       question_type: body.question_type,
       question_text: body.question_text,
+      context: body.context ?? null,
       options: body.options ?? null,
       correct_answer: body.correct_answer,
       points: body.points ?? 1,
       explanation: body.explanation ?? null,
+      instruction: body.instruction ?? null,
     })
     .select()
     .single();

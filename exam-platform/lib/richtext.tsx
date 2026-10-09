@@ -1,19 +1,29 @@
 import React from "react";
 
-// Markdown subset: **bold**, *italic*, __underline__ — hỗ trợ lồng nhau.
+// Markdown subset: **bold**, *italic*, ++underline++ (nestable).
+// Runs of 3+ underscores are blanks and are always rendered literally.
+// Legacy "__underline__" is still read, but only when it wraps real text
+// (no space right inside the markers), so "A __ B __ C" is left alone.
+const TOKEN = /(_{3,}|\*\*.+?\*\*|\+\+.+?\+\+|__\S(?:.*?\S)?__|\*.+?\*)/g;
+
 export function parseRichText(text: string): React.ReactNode {
   if (!text) return text;
   const nodes: React.ReactNode[] = [];
-  const regex = /(\*\*.+?\*\*|__.+?__|\*.+?\*)/g;
+  // fresh regex per call: parseRichText recurses, a shared one would clobber lastIndex
+  const regex = new RegExp(TOKEN.source, "g");
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   let key = 0;
+
   while ((match = regex.exec(text))) {
     if (match.index > lastIndex) nodes.push(text.slice(lastIndex, match.index));
     const token = match[0];
-    if (token.startsWith("**")) {
+
+    if (/^_{3,}$/.test(token)) {
+      nodes.push(token); // a blank, not formatting
+    } else if (token.startsWith("**")) {
       nodes.push(<strong key={key++}>{parseRichText(token.slice(2, -2))}</strong>);
-    } else if (token.startsWith("__")) {
+    } else if (token.startsWith("++") || token.startsWith("__")) {
       nodes.push(<u key={key++}>{parseRichText(token.slice(2, -2))}</u>);
     } else {
       nodes.push(<em key={key++}>{parseRichText(token.slice(1, -1))}</em>);
@@ -23,9 +33,10 @@ export function parseRichText(text: string): React.ReactNode {
   if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
   return nodes;
 }
+
 // ---------- toggle helpers for the toolbar ----------
 
-const MARK = { bold: "**", italic: "*", underline: "__" } as const;
+const MARK = { bold: "**", italic: "*", underline: "++" } as const;
 type Kind = keyof typeof MARK;
 
 // Is the selection [start, end) already fully wrapped by `kind`'s marker —

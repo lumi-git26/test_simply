@@ -15,17 +15,11 @@ const TYPE_LABELS: Record<QuestionType, string> = {
 export function QuestionBlockCard({
   index,
   data,
-  readingOptions,
-  passageBlockId,
-  onChangePassage,
   onChange,
   onDelete,
 }: {
   index: number;
   data: QuestionBlockData;
-  readingOptions: { id: string; label: string }[];
-  passageBlockId: string | null;
-  onChangePassage: (id: string | null) => void;
   onChange: (data: QuestionBlockData) => void;
   onDelete: () => void;
 }) {
@@ -35,7 +29,6 @@ export function QuestionBlockCard({
 
   return (
     <div className="rounded-card bg-paper-dark p-5">
-      {/* ---- header row: drag handle, title, type select, delete ---- */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="cursor-grab select-none text-ink-soft/50">⠿</span>
@@ -55,20 +48,6 @@ export function QuestionBlockCard({
         </div>
       </div>
 
-      {readingOptions.length > 0 && (
-        <select
-          className="mb-2 w-full rounded-md border border-border bg-paper px-3 py-1.5 text-xs text-ink-soft"
-          value={passageBlockId ?? ""}
-          onChange={(e) => onChangePassage(e.target.value || null)}
-        >
-          <option value="">No passage</option>
-          {readingOptions.map((r) => (
-            <option key={r.id} value={r.id}>{r.label || "Untitled passage"}</option>
-          ))}
-        </select>
-      )}
-
-      {/* ---- question text: white pill, matches reference ---- */}
       <div className="mb-3 rounded-md bg-paper px-4 py-3">
         <RichTextField
           multiline
@@ -89,7 +68,6 @@ export function QuestionBlockCard({
         </div>
       </details>
 
-      {/* ---- multiple choice: vertical white rows + green check toggle ---- */}
       {data.question_type === "multiple_choice" && (
         <div className="space-y-2">
           {(["A", "B", "C", "D"] as const).map((key) => {
