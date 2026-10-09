@@ -1,34 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-function randomSlug(len = 7) {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  return Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-}
-
-export async function POST(req: NextRequest) {
+export async function PATCH(req: NextRequest, { params }: { params: { examId: string } }) {
   const supabase = createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { title } = await req.json();
+  const body = await req.json();
+  const allowed = ["title", "description", "time_limit_minutes", "status", "tags"];
+  const update: Record<string, unknown> = {};
+  for (const key of allowed) if (key in body) update[key] = body[key];
 
-  const { data: exam, error } = await supabase
+  if ("tags" in update) {
+    const raw = update.tags;
+    if (!Array.isArray(raw) || raw.some((t) => typeof t !== "string")) {
+      return NextResponse.json({ error: "tags must be an array of strings" }, { status: 400 });
+    }
+    // trim, drop empties, dedupe case-insensitively
+    const seen = new Set<string>();
+    update.tags = (raw as string[])
+      .map((t) => t.trim())
+      .filter((t) => {
+        const k = t.toLowerCase();
+        if (!t || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+  }
+
+  update.updated_at = new Date().toISOString();
+
+  const { data, error } = await supabase
     .from("exams")
-    .insert({
-      teacher_id: user.id,
-      title: title || "Untitled Exam",
-      share_slug: randomSlug(),
-      status: "draft",
-    })
+    .update(update)
+    .eq("id", params.examId)
+    .eq("teacher_id", user.id)
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  await supabase.from("exam_settings").insert({ exam_id: exam.id });
-
-  return NextResponse.json({ id: exam.id });
+  return NextResponse.json(data);
 }

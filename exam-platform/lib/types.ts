@@ -59,6 +59,7 @@ export type Submission = {
   submitted_at: string | null;
   auto_submitted: boolean;
   status: "in_progress" | "submitted" | "graded";
+  tags: string[] | null;
   total_score: number | null;
   max_score: number | null;
   reviewed_by_teacher: boolean;

@@ -2,7 +2,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { ExamCard } from "@/components/exam-builder/ExamCard";
+import { DashboardList, ExamRow } from "@/components/exam-builder/DashboardList";
 
 export default async function DashboardPage() {
   const supabase = createServerSupabaseClient();
@@ -14,7 +14,7 @@ export default async function DashboardPage() {
 
   const { data: exams } = await supabase
     .from("exams")
-    .select("id, title, status, share_slug, created_at, exam_settings(*)")
+    .select("id, title, status, share_slug, created_at, tags, exam_settings(*)")
     .eq("teacher_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -27,19 +27,7 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {!exams?.length && (
-        <p className="text-ink-soft">No exams yet — click "New exam" to get started.</p>
-      )}
-
-      <div className="grid gap-4">
-        {exams?.map((exam) => (
-          <ExamCard
-            key={exam.id}
-            exam={exam}
-            settings={(exam as any).exam_settings}
-          />
-        ))}
-      </div>
+      <DashboardList initialExams={(exams ?? []) as unknown as ExamRow[]} />
     </main>
   );
 }
