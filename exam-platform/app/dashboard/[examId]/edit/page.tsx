@@ -18,11 +18,21 @@ export default async function EditExamPage({ params }: { params: { examId: strin
 
   if (!exam) notFound();
 
-  const { data: settings } = await supabase
+  let { data: settings } = await supabase
     .from("exam_settings")
     .select("*")
     .eq("exam_id", exam.id)
-    .single();
+    .maybeSingle();
+
+  // an exam must always have a settings row; create the default one if it is missing
+  if (!settings) {
+    const { data: created } = await supabase
+      .from("exam_settings")
+      .insert({ exam_id: exam.id })
+      .select()
+      .single();
+    settings = created;
+  }
 
   const { data: questions } = await supabase
     .from("questions")
